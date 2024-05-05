@@ -7,7 +7,7 @@
     <title>Rocket League Card - <%= nameCar %>
     </title>
     <link rel="stylesheet" href="../css/style.css">
-    <script src="./js/index.js" defer></script>
+    <script src="../js/changehandler.js" defer></script>
 </head>
 
 <body>
@@ -16,9 +16,7 @@
             <section class="cardsContainer">
                 <section class="actualCards">
                     <a href="/car/<%= nameCar %>">
-                        <h1>
-                            <%= nameCar %>
-                        </h1>
+                        <h1 id="nameHeader"><%= nameCar %></h1>
                         <img src="<%= image %>">
                     </a>
                     <p>
@@ -34,6 +32,25 @@
                             <%= playstyle2 %>
                         </a>
                     </p>
+                </section>
+                <br>
+                <section class="actualCards">
+                    <h2>Change Vehicle Information</h2>
+                    <form id="changeForm">
+                        <label for="newName">New Name:</label>
+                        <input type="text" id="newName" value="<%= nameCar %>" name="newName"><br>
+
+                        <label for="newType">New Type:</label>
+                        <input type="text" id="newType" value="<%= type %>" name="newType"><br>
+
+                        <label for="newClass">New Class:</label>
+                        <input type="text" id="newClass" value="<%= carClass %>" name="newClass"><br>
+
+                        <label for="newImage">New Image URL:</label>
+                        <input type="text" id="newImage" value="<%= image %>" name="newImage"><br>
+
+                        <button type="submit">Submit</button>
+                    </form>
                 </section>
             </section>
         </section>

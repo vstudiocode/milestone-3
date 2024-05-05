@@ -1,20 +1,62 @@
 import express from "express";
 import ejs from "ejs";
 import { Car } from "./interfaces/cars"
+import { MongoClient } from "mongodb";
+
+const dotenv = require('dotenv');
+dotenv.config();
+console.log("[server] Successfully parsed ENV values");
 
 const app = express();
 
-let vehicles: any;
-
 app.use(express.static("public"));
 app.set("view engine", "ejs");
-app.set("port", 3000);
+app.set("port", 4200);
+app.use(express.json());
 
-app.get("/", (req, res) => {
-    let filteredVehicles: Car[] = [...vehicles];
+async function fetchVehciles() {
+    const documents = await vehiclesCollection.find({}).toArray();
+    const convertedData: Car[] = documents.map(doc => ({
+        name: doc.name,
+        type: doc.type,
+        class: doc.class,
+        playstyle: doc.playstyle,
+        image: doc.image
+    }));
+    return convertedData;
+}
+
+async function changeVehicleName(name: string, newName: string) {
+    await vehiclesCollection.updateOne({ name: name }, { $set: { name: newName } });
+}
+
+async function changeVehicleType(name: string, newType: string) {
+    await vehiclesCollection.updateOne({ name: name }, { $set: { type: newType } });
+}
+
+async function changeVehicleClass(name: string, newClass: string) {
+    await vehiclesCollection.updateOne({ name: name }, { $set: { class: newClass } });
+}
+
+async function changeVehicleImage(name: string, newImage: string) {
+    await vehiclesCollection.updateOne({ name: name }, { $set: { image: newImage } });
+}
+
+const client = new MongoClient(process.env.MONGODB_URI ?? "mongodb://localhost:27017");
+client.connect();
+
+const db = client.db("milestone");
+const vehiclesCollection = db.collection("part3");
+console.log("[server] Successfully initialized collections");
+
+app.get("/", async (req, res) => {
+    
+
+    let filteredVehicles = await fetchVehciles();
 
     if (req.query["q"] !== undefined) {
         const queryString = req.query["q"].toString().toLowerCase();
+
         filteredVehicles = filteredVehicles.filter(vehicle => vehicle.name.toLowerCase().includes(queryString));
     }
 
@@ -51,9 +93,10 @@ app.get("/", (req, res) => {
     res.render("index.ejs", { vehicles: filteredVehicles });
 });
 
-app.get("/car/:name", (req, res) => {
+app.get("/car/:name", async (req, res) => {
 
     let name: string = req.params.name;
+    let vehicles = await fetchVehciles();
 
     let nameCar: string = "";
     let type: string = "";
@@ -81,12 +124,23 @@ app.get("/car/:name", (req, res) => {
     res.render("car.ejs", { nameCar: nameCar, type: type, image: image, carClass: carClass, rarity: rarity, playstyle1: playstyle1, playstyle2: playstyle2 });
 });
 
+app.post("/api/change", async (req, res) => {
+    console.log(req.body);
+    const { name, newName, newType, newClass, newImage } = req.body;
+    await changeVehicleName(name, newName);
+    await changeVehicleType(name, newType);
+    await changeVehicleClass(name, newClass);
+    await changeVehicleImage(name, newImage);
+    console.log("[server] Name changed successfully");
+});
+
 type ClassName = string;
 
-app.get("/classes", (req, res) => {
+app.get("/classes", async (req, res) => {
 
     let uniqueClasses: ClassName[] = [];
-    let filteredVehicles: Car[] = [...vehicles];
+
+    let filteredVehicles = await fetchVehciles();
 
     filteredVehicles.forEach(vehicle => {
 
@@ -103,11 +157,11 @@ app.get("/classes", (req, res) => {
     res.render("classes.ejs", { classes: uniqueClasses });
 });
 
-app.get("/class/:name", (req, res) => {
+app.get("/class/:name", async (req, res) => {
 
     let name: string = req.params.name.toLowerCase();
 
-    let filteredVehicles: Car[] = [...vehicles];
+    let filteredVehicles = await fetchVehciles();
     let showVehciles: Car[] = [];
 
     filteredVehicles.forEach(vehicle => {
@@ -122,10 +176,10 @@ app.get("/class/:name", (req, res) => {
     res.render("class.ejs", { classe: name, vehicles: showVehciles });
 });
 
-app.get("/playstyles", (req, res) => {
+app.get("/playstyles", async (req, res) => {
 
     let uniquePlaystyles: ClassName[] = [];
-    let filteredVehicles: Car[] = [...vehicles];
+    let filteredVehicles = await fetchVehciles();
 
     filteredVehicles.forEach(vehicle => {
 
@@ -148,11 +202,11 @@ app.get("/playstyles", (req, res) => {
     res.render("playstyles.ejs", { playstyles: uniquePlaystyles });
 });
 
-app.get("/playstyle/:name", (req, res) => {
+app.get("/playstyle/:name", async (req, res) => {
 
     let name: string = req.params.name.toLowerCase();
 
-    let filteredVehicles: Car[] = [...vehicles];
+    let filteredVehicles = await fetchVehciles();
     let showVehciles: Car[] = [];
 
     filteredVehicles.forEach(vehicle => {
@@ -168,10 +222,19 @@ app.get("/playstyle/:name", (req, res) => {
 
 
 app.listen(app.get("port"), async () => {
-    let dataFileOnline = "https://raw.githubusercontent.com/vstudiocode/milestone-2/main/data.json";
-    let response = await fetch(dataFileOnline);
-    let data: Car = await response.json();
-    vehicles = data;
-    // console.log(data);
-    console.log("[server] http://localhost:" + app.get("port"))
+    const documentCount = await vehiclesCollection.countDocuments({});
+    console.log("[server] Number of documents:", documentCount);
+
+    if (documentCount === 0) {
+        console.log("[server] Fetching data from API");
+        const response = await fetch("https://raw.githubusercontent.com/vstudiocode/milestone-3/main/data.json");
+        const data = await response.json();
+        
+        for (const car of data) {
+            await vehiclesCollection.insertOne(car);
+        }
+        console.log("[server] Data inserted into MongoDB");
+    }
+
+    console.log("[server] http://localhost:" + app.get("port"));
 });
