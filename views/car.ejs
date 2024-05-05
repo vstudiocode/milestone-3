@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rocket League Card - <%= nameCar %>
+    </title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="./js/index.js" defer></script>
+</head>
+
+<body>
+    <%- include('sidebar') %>
+        <section class="mainContent">
+            <section class="cardsContainer">
+                <section class="actualCards">
+                    <a href="/car/<%= nameCar %>">
+                        <h1>
+                            <%= nameCar %>
+                        </h1>
+                        <img src="<%= image %>">
+                    </a>
+                    <p>
+                        <%= type %> - <a href="/class/<%= carClass %>">
+                                <%= carClass %>
+                            </a>
+                    </p>
+                    <p>
+                        <a href="/playstyle/<%= playstyle1 %>">
+                            <%= playstyle1 %>
+                        </a> -
+                        <a href="/playstyle/<%= playstyle2 %>">
+                            <%= playstyle2 %>
+                        </a>
+                    </p>
+                </section>
+            </section>
+        </section>
+</body>
+
+</html>
